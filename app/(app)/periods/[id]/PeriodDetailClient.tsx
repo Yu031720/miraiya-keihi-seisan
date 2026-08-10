@@ -1,0 +1,375 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { computeZangaku, computeTransferTotal } from "@/lib/report/computeZangaku";
+import { formatReport } from "@/lib/report/formatReport";
+import { formatYen } from "@/lib/report/formatCurrency";
+import type { Database } from "@/lib/supabase/types";
+
+type Period = Database["public"]["Tables"]["report_periods"]["Row"];
+type Purchase = Database["public"]["Tables"]["purchases"]["Row"];
+type Expense = Database["public"]["Tables"]["other_expenses"]["Row"];
+
+export function PeriodDetailClient({
+  period,
+  initialPurchases,
+  initialExpenses,
+  displayName,
+  staffId,
+}: {
+  period: Period;
+  initialPurchases: Purchase[];
+  initialExpenses: Expense[];
+  displayName: string;
+  staffId: string;
+}) {
+  const supabase = useMemo(() => createClient(), []);
+
+  const [startingFloat, setStartingFloat] = useState(period.starting_float);
+  const [transferBase, setTransferBase] = useState(period.transfer_base);
+  const [transferManualAddition, setTransferManualAddition] = useState(
+    period.transfer_manual_addition
+  );
+  const [purchases, setPurchases] = useState<Purchase[]>(initialPurchases);
+  const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
+
+  const [newPurchaseAmount, setNewPurchaseAmount] = useState("");
+  const [newPurchaseNote, setNewPurchaseNote] = useState("");
+  const [newExpenseAmount, setNewExpenseAmount] = useState("");
+  const [newExpenseDescription, setNewExpenseDescription] = useState("");
+
+  const [savingHeader, setSavingHeader] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const purchaseTotal = purchases.reduce((sum, p) => sum + p.amount, 0);
+  const expenseTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const zangaku = computeZangaku(startingFloat, purchaseTotal, expenseTotal);
+  const transferTotal = computeTransferTotal(transferBase, transferManualAddition);
+
+  const reportText = formatReport({
+    displayName,
+    periodStart: period.period_start,
+    periodEnd: period.period_end,
+    zangaku,
+    otherExpenseTotal: expenseTotal,
+    transferTotal,
+  });
+
+  async function saveHeaderFields(fields: Partial<Period>) {
+    setSavingHeader(true);
+    setError(null);
+    const { error } = await supabase.from("report_periods").update(fields).eq("id", period.id);
+    setSavingHeader(false);
+    if (error) setError(error.message);
+  }
+
+  async function addPurchase(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    const amount = Number(newPurchaseAmount);
+    if (!amount || amount <= 0) {
+      setError("買取金額を正しく入力してください。");
+      return;
+    }
+    const { data, error } = await supabase
+      .from("purchases")
+      .insert({
+        staff_id: staffId,
+        report_period_id: period.id,
+        amount,
+        item_note: newPurchaseNote || null,
+        source: "manual",
+      })
+      .select("*")
+      .single();
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setPurchases((prev) => [...prev, data]);
+    setNewPurchaseAmount("");
+    setNewPurchaseNote("");
+  }
+
+  async function deletePurchase(id: string) {
+    const prev = purchases;
+    setPurchases(purchases.filter((p) => p.id !== id));
+    const { error } = await supabase.from("purchases").delete().eq("id", id);
+    if (error) {
+      setError(error.message);
+      setPurchases(prev);
+    }
+  }
+
+  async function addExpense(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    const amount = Number(newExpenseAmount);
+    if (!amount || amount <= 0) {
+      setError("経費金額を正しく入力してください。");
+      return;
+    }
+    if (!newExpenseDescription.trim()) {
+      setError("経費の内容を入力してください。");
+      return;
+    }
+    const { data, error } = await supabase
+      .from("other_expenses")
+      .insert({
+        staff_id: staffId,
+        report_period_id: period.id,
+        amount,
+        description: newExpenseDescription,
+      })
+      .select("*")
+      .single();
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setExpenses((prev) => [...prev, data]);
+    setNewExpenseAmount("");
+    setNewExpenseDescription("");
+  }
+
+  async function deleteExpense(id: string) {
+    const prev = expenses;
+    setExpenses(expenses.filter((e) => e.id !== id));
+    const { error } = await supabase.from("other_expenses").delete().eq("id", id);
+    if (error) {
+      setError(error.message);
+      setExpenses(prev);
+    }
+  }
+
+  async function handleFinalize() {
+    setError(null);
+    const { error } = await supabase
+      .from("report_periods")
+      .update({
+        starting_float: startingFloat,
+        transfer_base: transferBase,
+        transfer_manual_addition: transferManualAddition,
+        computed_zangaku: zangaku,
+        generated_text: reportText,
+        status: "finalized",
+      })
+      .eq("id", period.id);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    window.location.reload();
+  }
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(reportText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  const isFinalized = period.status === "finalized";
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-bold text-zinc-900">
+          {period.period_start} 〜 {period.period_end}
+        </h1>
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs ${
+            isFinalized ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-500"
+          }`}
+        >
+          {isFinalized ? "確定済み" : "下書き"}
+        </span>
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <section className="rounded-xl border border-zinc-200 bg-white p-6">
+        <label className="block text-sm font-medium text-zinc-700">
+          元手(この週の開始時点の手持ち現金)
+        </label>
+        <input
+          type="number"
+          disabled={isFinalized}
+          value={startingFloat}
+          onChange={(e) => setStartingFloat(Number(e.target.value))}
+          onBlur={() => saveHeaderFields({ starting_float: startingFloat })}
+          className="mt-1 w-48 rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:bg-zinc-100"
+        />
+      </section>
+
+      <section className="rounded-xl border border-zinc-200 bg-white p-6">
+        <h2 className="font-semibold text-zinc-900">買取</h2>
+        <table className="mt-3 w-full text-sm">
+          <tbody>
+            {purchases.map((p) => (
+              <tr key={p.id} className="border-t border-zinc-100">
+                <td className="py-2 text-zinc-700">{p.item_note || "-"}</td>
+                <td className="py-2 text-right font-medium">{formatYen(p.amount)}</td>
+                <td className="py-2 pl-3 text-right">
+                  {!isFinalized && (
+                    <button
+                      onClick={() => deletePurchase(p.id)}
+                      className="text-xs text-red-500 hover:text-red-700"
+                    >
+                      削除
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="mt-2 flex justify-between border-t border-zinc-200 pt-2 text-sm font-semibold">
+          <span>買取合計</span>
+          <span>{formatYen(purchaseTotal)}</span>
+        </div>
+
+        {!isFinalized && (
+          <form onSubmit={addPurchase} className="mt-4 flex flex-wrap items-end gap-2">
+            <div>
+              <label className="block text-xs text-zinc-500">金額</label>
+              <input
+                type="number"
+                value={newPurchaseAmount}
+                onChange={(e) => setNewPurchaseAmount(e.target.value)}
+                className="w-32 rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500">メモ(任意)</label>
+              <input
+                type="text"
+                value={newPurchaseNote}
+                onChange={(e) => setNewPurchaseNote(e.target.value)}
+                placeholder="例: 腕時計"
+                className="w-40 rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700"
+            >
+              追加
+            </button>
+          </form>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-zinc-200 bg-white p-6">
+        <h2 className="font-semibold text-zinc-900">その他の経費</h2>
+        <table className="mt-3 w-full text-sm">
+          <tbody>
+            {expenses.map((exp) => (
+              <tr key={exp.id} className="border-t border-zinc-100">
+                <td className="py-2 text-zinc-700">{exp.description}</td>
+                <td className="py-2 text-right font-medium">{formatYen(exp.amount)}</td>
+                <td className="py-2 pl-3 text-right">
+                  {!isFinalized && (
+                    <button
+                      onClick={() => deleteExpense(exp.id)}
+                      className="text-xs text-red-500 hover:text-red-700"
+                    >
+                      削除
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="mt-2 flex justify-between border-t border-zinc-200 pt-2 text-sm font-semibold">
+          <span>その他の経費合計</span>
+          <span>{formatYen(expenseTotal)}</span>
+        </div>
+
+        {!isFinalized && (
+          <form onSubmit={addExpense} className="mt-4 flex flex-wrap items-end gap-2">
+            <div>
+              <label className="block text-xs text-zinc-500">金額</label>
+              <input
+                type="number"
+                value={newExpenseAmount}
+                onChange={(e) => setNewExpenseAmount(e.target.value)}
+                className="w-32 rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500">内容</label>
+              <input
+                type="text"
+                value={newExpenseDescription}
+                onChange={(e) => setNewExpenseDescription(e.target.value)}
+                placeholder="例: 梱包資材"
+                className="w-40 rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700"
+            >
+              追加
+            </button>
+          </form>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-zinc-200 bg-white p-6">
+        <h2 className="font-semibold text-zinc-900">振込金額</h2>
+        <div className="mt-3 flex gap-4">
+          <div>
+            <label className="block text-xs text-zinc-500">基本額</label>
+            <input
+              type="number"
+              disabled={isFinalized}
+              value={transferBase}
+              onChange={(e) => setTransferBase(Number(e.target.value))}
+              onBlur={() => saveHeaderFields({ transfer_base: transferBase })}
+              className="w-32 rounded-md border border-zinc-300 px-2 py-1.5 text-sm disabled:bg-zinc-100"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-zinc-500">手動追加</label>
+            <input
+              type="number"
+              disabled={isFinalized}
+              value={transferManualAddition}
+              onChange={(e) => setTransferManualAddition(Number(e.target.value))}
+              onBlur={() => saveHeaderFields({ transfer_manual_addition: transferManualAddition })}
+              className="w-32 rounded-md border border-zinc-300 px-2 py-1.5 text-sm disabled:bg-zinc-100"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-xl border-2 border-zinc-900 bg-white p-6">
+        <h2 className="font-semibold text-zinc-900">報告文</h2>
+        <pre className="mt-3 whitespace-pre-wrap rounded-md bg-zinc-50 p-4 text-sm">
+          {reportText}
+        </pre>
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={handleCopy}
+            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+          >
+            {copied ? "コピーしました" : "コピー"}
+          </button>
+          {!isFinalized && (
+            <button
+              onClick={handleFinalize}
+              className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:border-zinc-500"
+            >
+              確定する
+            </button>
+          )}
+        </div>
+        {savingHeader && <p className="mt-2 text-xs text-zinc-400">保存中...</p>}
+      </section>
+    </div>
+  );
+}
