@@ -270,7 +270,14 @@ export function PeriodDetailClient({
           <tbody>
             {purchases.map((p) => (
               <tr key={p.id} className="border-t border-zinc-100">
-                <td className="py-2 text-zinc-700">{p.item_note || "-"}</td>
+                <td className="py-2 text-zinc-700">
+                  {p.item_note || "-"}
+                  {p.source === "line" && (
+                    <span className="ml-2 rounded bg-green-50 px-1.5 py-0.5 text-xs text-green-700">
+                      LINE
+                    </span>
+                  )}
+                </td>
                 <td className="py-2 text-right font-medium">{formatYen(p.amount)}</td>
                 <td className="py-2 pl-3 text-right">
                   {!isFinalized && (

@@ -49,6 +49,7 @@ export type Database = {
           source: "manual" | "line";
           occurred_at: string;
           needs_review: boolean;
+          line_message_id: string | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["purchases"]["Row"]> & {
@@ -75,6 +76,24 @@ export type Database = {
           description: string;
         };
         Update: Partial<Database["public"]["Tables"]["other_expenses"]["Row"]>;
+        Relationships: [];
+      };
+      line_webhook_events: {
+        Row: {
+          id: string;
+          line_message_id: string | null;
+          line_group_id: string | null;
+          raw_payload: unknown;
+          parse_status: "parsed" | "needs_review" | "ignored";
+          parsed_staff_name: string | null;
+          resulting_purchase_id: string | null;
+          received_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["line_webhook_events"]["Row"]> & {
+          raw_payload: unknown;
+          parse_status: "parsed" | "needs_review" | "ignored";
+        };
+        Update: Partial<Database["public"]["Tables"]["line_webhook_events"]["Row"]>;
         Relationships: [];
       };
     };
