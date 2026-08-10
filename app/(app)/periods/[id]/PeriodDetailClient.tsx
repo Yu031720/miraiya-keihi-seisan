@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { computeZangaku, computeTransferTotal } from "@/lib/report/computeZangaku";
 import { formatReport } from "@/lib/report/formatReport";
 import { formatYen } from "@/lib/report/formatCurrency";
+import { scanReceipt } from "@/lib/ocr/scanReceipt";
 import type { Database } from "@/lib/supabase/types";
 
 type Period = Database["public"]["Tables"]["report_periods"]["Row"];
@@ -38,6 +39,11 @@ export function PeriodDetailClient({
   const [newPurchaseNote, setNewPurchaseNote] = useState("");
   const [newExpenseAmount, setNewExpenseAmount] = useState("");
   const [newExpenseDescription, setNewExpenseDescription] = useState("");
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
+  const [scanningReceipt, setScanningReceipt] = useState(false);
+  const [addingExpense, setAddingExpense] = useState(false);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
 
   const [savingHeader, setSavingHeader] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -103,6 +109,34 @@ export function PeriodDetailClient({
     }
   }
 
+  async function handleReceiptSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setReceiptFile(file);
+    setReceiptPreviewUrl(URL.createObjectURL(file));
+    setScanningReceipt(true);
+    try {
+      const result = await scanReceipt(file);
+      if (result.amount && !newExpenseAmount) {
+        setNewExpenseAmount(String(result.amount));
+      }
+      if (result.description && !newExpenseDescription) {
+        setNewExpenseDescription(result.description);
+      }
+    } catch {
+      setError("レシートの読み取りに失敗しました。金額・内容を手入力してください。");
+    } finally {
+      setScanningReceipt(false);
+    }
+  }
+
+  function clearReceiptSelection() {
+    setReceiptFile(null);
+    setReceiptPreviewUrl(null);
+    if (receiptInputRef.current) receiptInputRef.current.value = "";
+  }
+
   async function addExpense(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -115,6 +149,23 @@ export function PeriodDetailClient({
       setError("経費の内容を入力してください。");
       return;
     }
+
+    setAddingExpense(true);
+    let receiptPath: string | null = null;
+    if (receiptFile) {
+      const ext = receiptFile.name.split(".").pop() || "jpg";
+      const path = `${staffId}/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("receipts")
+        .upload(path, receiptFile);
+      if (uploadError) {
+        setAddingExpense(false);
+        setError(`レシート画像のアップロードに失敗しました: ${uploadError.message}`);
+        return;
+      }
+      receiptPath = path;
+    }
+
     const { data, error } = await supabase
       .from("other_expenses")
       .insert({
@@ -122,9 +173,11 @@ export function PeriodDetailClient({
         report_period_id: period.id,
         amount,
         description: newExpenseDescription,
+        receipt_path: receiptPath,
       })
       .select("*")
       .single();
+    setAddingExpense(false);
     if (error) {
       setError(error.message);
       return;
@@ -132,6 +185,18 @@ export function PeriodDetailClient({
     setExpenses((prev) => [...prev, data]);
     setNewExpenseAmount("");
     setNewExpenseDescription("");
+    clearReceiptSelection();
+  }
+
+  async function viewReceipt(path: string) {
+    const { data, error } = await supabase.storage
+      .from("receipts")
+      .createSignedUrl(path, 60);
+    if (error || !data) {
+      setError("レシート画像を開けませんでした。");
+      return;
+    }
+    window.open(data.signedUrl, "_blank");
   }
 
   async function deleteExpense(id: string) {
@@ -267,7 +332,17 @@ export function PeriodDetailClient({
           <tbody>
             {expenses.map((exp) => (
               <tr key={exp.id} className="border-t border-zinc-100">
-                <td className="py-2 text-zinc-700">{exp.description}</td>
+                <td className="py-2 text-zinc-700">
+                  {exp.description}
+                  {exp.receipt_path && (
+                    <button
+                      onClick={() => viewReceipt(exp.receipt_path!)}
+                      className="ml-2 text-xs text-zinc-400 underline hover:text-zinc-700"
+                    >
+                      レシート
+                    </button>
+                  )}
+                </td>
                 <td className="py-2 text-right font-medium">{formatYen(exp.amount)}</td>
                 <td className="py-2 pl-3 text-right">
                   {!isFinalized && (
@@ -289,32 +364,62 @@ export function PeriodDetailClient({
         </div>
 
         {!isFinalized && (
-          <form onSubmit={addExpense} className="mt-4 flex flex-wrap items-end gap-2">
+          <form onSubmit={addExpense} className="mt-4 flex flex-col gap-3">
             <div>
-              <label className="block text-xs text-zinc-500">金額</label>
-              <input
-                type="number"
-                value={newExpenseAmount}
-                onChange={(e) => setNewExpenseAmount(e.target.value)}
-                className="w-32 rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
-              />
+              <label className="block text-xs text-zinc-500">レシート写真(任意・自動で金額を読み取ります)</label>
+              <div className="mt-1 flex items-center gap-3">
+                <input
+                  ref={receiptInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleReceiptSelected}
+                  className="text-sm"
+                />
+                {scanningReceipt && <span className="text-xs text-zinc-400">読み取り中...</span>}
+              </div>
+              {receiptPreviewUrl && (
+                <div className="mt-2 flex items-center gap-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={receiptPreviewUrl} alt="レシートプレビュー" className="h-20 w-20 rounded border border-zinc-200 object-cover" />
+                  <button
+                    type="button"
+                    onClick={clearReceiptSelection}
+                    className="text-xs text-zinc-400 hover:text-red-600"
+                  >
+                    写真を取り消す
+                  </button>
+                </div>
+              )}
             </div>
-            <div>
-              <label className="block text-xs text-zinc-500">内容</label>
-              <input
-                type="text"
-                value={newExpenseDescription}
-                onChange={(e) => setNewExpenseDescription(e.target.value)}
-                placeholder="例: 梱包資材"
-                className="w-40 rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
-              />
+            <div className="flex flex-wrap items-end gap-2">
+              <div>
+                <label className="block text-xs text-zinc-500">金額</label>
+                <input
+                  type="number"
+                  value={newExpenseAmount}
+                  onChange={(e) => setNewExpenseAmount(e.target.value)}
+                  className="w-32 rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500">内容</label>
+                <input
+                  type="text"
+                  value={newExpenseDescription}
+                  onChange={(e) => setNewExpenseDescription(e.target.value)}
+                  placeholder="例: 梱包資材"
+                  className="w-40 rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={addingExpense}
+                className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700 disabled:opacity-50"
+              >
+                {addingExpense ? "追加中..." : "追加"}
+              </button>
             </div>
-            <button
-              type="submit"
-              className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700"
-            >
-              追加
-            </button>
           </form>
         )}
       </section>

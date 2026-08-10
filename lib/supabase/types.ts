@@ -66,6 +66,7 @@ export type Database = {
           amount: number;
           description: string;
           expense_date: string;
+          receipt_path: string | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["other_expenses"]["Row"]> & {
