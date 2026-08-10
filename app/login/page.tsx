@@ -56,7 +56,7 @@ export default function LoginPage() {
   return (
     <div className="flex flex-1 items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-8 shadow-sm">
-        <h1 className="text-xl font-bold text-zinc-900">みらいや経費精算</h1>
+        <h1 className="text-xl font-bold text-blue-700">みらいや経費精算</h1>
         <p className="mt-1 text-sm text-zinc-500">
           {mode === "signin" ? "ログイン" : "新規アカウント登録"}
         </p>
@@ -70,7 +70,7 @@ export default function LoginPage() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="例: 田中"
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               />
             </div>
           )}
@@ -81,7 +81,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             />
           </div>
           <div>
@@ -92,7 +92,7 @@ export default function LoginPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             />
           </div>
 
@@ -102,7 +102,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+            className="mt-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? "処理中..." : mode === "signin" ? "ログイン" : "登録する"}
           </button>
@@ -115,7 +115,7 @@ export default function LoginPage() {
             setError(null);
             setInfo(null);
           }}
-          className="mt-4 w-full text-center text-sm text-zinc-500 hover:text-zinc-800"
+          className="mt-4 w-full text-center text-sm text-zinc-500 hover:text-blue-700"
         >
           {mode === "signin" ? "アカウントを作成する" : "すでにアカウントをお持ちの方はこちら"}
         </button>

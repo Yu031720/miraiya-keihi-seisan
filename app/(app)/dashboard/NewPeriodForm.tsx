@@ -24,7 +24,7 @@ export function NewPeriodForm({ onCreated }: { onCreated?: () => void }) {
   const range = defaultRange();
   const [periodStart, setPeriodStart] = useState(range.start);
   const [periodEnd, setPeriodEnd] = useState(range.end);
-  const [startingFloat, setStartingFloat] = useState("100000");
+  const [startingFloat, setStartingFloat] = useState("300000");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -67,7 +67,7 @@ export function NewPeriodForm({ onCreated }: { onCreated?: () => void }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
       >
         + 新しい期間を作成
       </button>
@@ -116,7 +116,7 @@ export function NewPeriodForm({ onCreated }: { onCreated?: () => void }) {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {loading ? "作成中..." : "作成する"}
         </button>
