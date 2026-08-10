@@ -145,10 +145,6 @@ export function PeriodDetailClient({
       setError("経費金額を正しく入力してください。");
       return;
     }
-    if (!newExpenseDescription.trim()) {
-      setError("経費の内容を入力してください。");
-      return;
-    }
 
     setAddingExpense(true);
     let receiptPath: string | null = null;
@@ -400,16 +396,6 @@ export function PeriodDetailClient({
                   value={newExpenseAmount}
                   onChange={(e) => setNewExpenseAmount(e.target.value)}
                   className="w-32 rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-zinc-500">内容</label>
-                <input
-                  type="text"
-                  value={newExpenseDescription}
-                  onChange={(e) => setNewExpenseDescription(e.target.value)}
-                  placeholder="例: 梱包資材"
-                  className="w-40 rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
                 />
               </div>
               <button
