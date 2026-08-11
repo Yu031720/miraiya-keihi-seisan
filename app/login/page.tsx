@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [signupCode, setSignupCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,11 +28,20 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { display_name: displayName || email.split("@")[0] } },
+        options: {
+          data: {
+            display_name: displayName || email.split("@")[0],
+            signup_code: signupCode,
+          },
+        },
       });
       setLoading(false);
       if (error) {
-        setError(error.message);
+        setError(
+          error.message.includes("Database error")
+            ? "招待コードが違います。担当者に確認してください。"
+            : error.message
+        );
         return;
       }
       if (!data.session) {
@@ -63,16 +73,29 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           {mode === "signup" && (
-            <div>
-              <label className="block text-sm font-medium text-zinc-700">お名前(担当者名)</label>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="例: 田中"
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              />
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700">お名前(担当者名)</label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="例: 田中"
+                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700">招待コード</label>
+                <input
+                  type="text"
+                  required
+                  value={signupCode}
+                  onChange={(e) => setSignupCode(e.target.value)}
+                  placeholder="担当者に確認してください"
+                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+            </>
           )}
           <div>
             <label className="block text-sm font-medium text-zinc-700">メールアドレス</label>

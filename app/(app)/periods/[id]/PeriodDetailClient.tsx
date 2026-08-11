@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { computeZangaku, computeTransferTotal } from "@/lib/report/computeZangaku";
 import { formatReport } from "@/lib/report/formatReport";
@@ -28,6 +29,8 @@ export function PeriodDetailClient({
   unclaimedCount?: number;
 }) {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
+  const [deletingPeriod, setDeletingPeriod] = useState(false);
 
   const [startingFloat, setStartingFloat] = useState(period.starting_float);
   const [transferBase, setTransferBase] = useState(period.transfer_base);
@@ -233,6 +236,21 @@ export function PeriodDetailClient({
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function handleDeletePeriod() {
+    if (!window.confirm("この下書き期間を削除しますか?入力した買取・経費データは削除されず、未所属に戻ります。")) {
+      return;
+    }
+    setDeletingPeriod(true);
+    const { error } = await supabase.from("report_periods").delete().eq("id", period.id);
+    setDeletingPeriod(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    router.push("/dashboard");
+    router.refresh();
+  }
+
   const isFinalized = period.status === "finalized";
 
   return (
@@ -241,13 +259,24 @@ export function PeriodDetailClient({
         <h1 className="text-lg font-bold text-zinc-900">
           {period.period_start} 〜 {period.period_end}
         </h1>
-        <span
-          className={`rounded-full px-2 py-0.5 text-xs ${
-            isFinalized ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-500"
-          }`}
-        >
-          {isFinalized ? "確定済み" : "下書き"}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs ${
+              isFinalized ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-500"
+            }`}
+          >
+            {isFinalized ? "確定済み" : "下書き"}
+          </span>
+          {!isFinalized && (
+            <button
+              onClick={handleDeletePeriod}
+              disabled={deletingPeriod}
+              className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
+            >
+              {deletingPeriod ? "削除中..." : "この期間を削除"}
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
