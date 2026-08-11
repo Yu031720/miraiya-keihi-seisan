@@ -115,6 +115,7 @@ export async function POST(request: NextRequest) {
     source: "line";
     occurred_at: string;
     needs_review: boolean;
+    image_urls: string[] | null;
     line_message_id?: string;
   } = {
     staff_id: staff.id,
@@ -125,6 +126,7 @@ export async function POST(request: NextRequest) {
     source: "line",
     occurred_at: occurredAt,
     needs_review: false,
+    image_urls: body.imageUrls && body.imageUrls.length > 0 ? body.imageUrls : null,
   };
   if (body.requestId) {
     insertPayload.line_message_id = body.requestId;

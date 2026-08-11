@@ -316,6 +316,21 @@ export function PeriodDetailClient({
                       自動取込
                     </span>
                   )}
+                  {p.image_urls && p.image_urls.length > 0 && (
+                    <span className="ml-2 inline-flex gap-1">
+                      {p.image_urls.map((url, i) => (
+                        <a
+                          key={url}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-orange-600 underline hover:text-orange-700"
+                        >
+                          写真{p.image_urls!.length > 1 ? i + 1 : ""}
+                        </a>
+                      ))}
+                    </span>
+                  )}
                 </td>
                 <td className="py-2 text-right font-medium">{formatYen(p.amount)}</td>
                 <td className="py-2 pl-3 text-right">
