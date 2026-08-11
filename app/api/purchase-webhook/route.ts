@@ -7,10 +7,31 @@ type PurchasePayload = {
   occurredAt?: string;
   note?: string;
   requestId?: string;
+  rawText?: string;
+  imageUrls?: string[];
 };
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+// 社内アプリがLINEに流している「受注速報」文面を解析する。
+// 例: 先頭行「【中村】」が担当者名、「アポ訪問日：2026-08-11」「金・プラ買取金額：12000」
+// 「オーク買取金額：3000」「ステータス：受注」のような行が並ぶ。
+function parseReportText(text: string) {
+  const staffMatch = text.match(/^【([^】]+)】/);
+  const statusMatch = text.match(/ステータス[:：]\s*(\S+)/);
+  const dateMatch = text.match(/アポ訪問日[:：]\s*(\d{4}-\d{2}-\d{2})/);
+  const kinPuraMatch = text.match(/金・プラ買取金額[:：]\s*([\d,]+)/);
+  const aucMatch = text.match(/オーク買取金額[:：]\s*([\d,]+)/);
+  const kinPura = kinPuraMatch ? parseInt(kinPuraMatch[1].replace(/,/g, ""), 10) : 0;
+  const auc = aucMatch ? parseInt(aucMatch[1].replace(/,/g, ""), 10) : 0;
+  return {
+    staffName: staffMatch ? staffMatch[1].trim() : null,
+    amount: kinPura + auc,
+    occurredAt: dateMatch ? dateMatch[1] : null,
+    status: statusMatch ? statusMatch[1] : null,
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -20,15 +41,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const rawText = await request.text();
+  const bodyText = await request.text();
   let body: PurchasePayload;
   try {
-    body = JSON.parse(rawText) as PurchasePayload;
+    body = JSON.parse(bodyText) as PurchasePayload;
   } catch {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
   }
 
   const supabase = createServiceRoleClient();
+
+  if (body.rawText && (!body.staffName || typeof body.amount !== "number")) {
+    const parsed = parseReportText(body.rawText);
+
+    if (!parsed.status?.includes("受注") || parsed.amount === 0) {
+      await supabase.from("line_webhook_events").insert({
+        line_message_id: body.requestId ?? null,
+        raw_payload: body as unknown as object,
+        parse_status: "ignored",
+        parsed_staff_name: parsed.staffName,
+      });
+      return NextResponse.json({ ok: true, skipped: true });
+    }
+
+    if (parsed.staffName) body.staffName = parsed.staffName;
+    if (parsed.amount > 0) body.amount = parsed.amount;
+    if (parsed.occurredAt) body.occurredAt = parsed.occurredAt;
+  }
 
   if (!body.staffName || typeof body.amount !== "number" || !(body.amount > 0)) {
     await supabase.from("line_webhook_events").insert({
