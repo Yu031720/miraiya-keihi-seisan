@@ -50,7 +50,6 @@ export type Database = {
           occurred_at: string;
           needs_review: boolean;
           line_message_id: string | null;
-          image_urls: string[] | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["purchases"]["Row"]> & {
