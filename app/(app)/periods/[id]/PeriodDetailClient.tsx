@@ -18,12 +18,14 @@ export function PeriodDetailClient({
   initialExpenses,
   displayName,
   staffId,
+  unclaimedCount = 0,
 }: {
   period: Period;
   initialPurchases: Purchase[];
   initialExpenses: Expense[];
   displayName: string;
   staffId: string;
+  unclaimedCount?: number;
 }) {
   const supabase = useMemo(() => createClient(), []);
 
@@ -249,6 +251,14 @@ export function PeriodDetailClient({
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {isFinalized && unclaimedCount > 0 && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+          この期間はすでに確定済みですが、この期間の日付範囲に該当する未反映の買取データが
+          {unclaimedCount}件あります(確定後に自動取込されたため、報告済みの金額を変えないようここには反映していません)。
+          必要であれば内容を確認し、次の期間に含めるなど手動で対応してください。
+        </div>
+      )}
 
       <section className="rounded-xl border border-zinc-200 bg-white p-6">
         <label className="block text-sm font-medium text-zinc-700">
