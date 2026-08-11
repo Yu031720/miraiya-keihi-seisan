@@ -274,7 +274,7 @@ export function PeriodDetailClient({
                   {p.item_note || "-"}
                   {p.source === "line" && (
                     <span className="ml-2 rounded bg-green-50 px-1.5 py-0.5 text-xs text-green-700">
-                      LINE
+                      自動取込
                     </span>
                   )}
                 </td>
