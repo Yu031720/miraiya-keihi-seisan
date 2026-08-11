@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -15,6 +15,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "みらいや経費精算",
   description: "週次経費報告を簡単にまとめるための社内ツール",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "経費精算",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f97316",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
