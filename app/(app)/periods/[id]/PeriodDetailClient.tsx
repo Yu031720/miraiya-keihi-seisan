@@ -333,7 +333,7 @@ export function PeriodDetailClient({
           </tbody>
         </table>
         <div className="mt-2 flex justify-between border-t border-zinc-200 pt-2 text-sm font-semibold">
-          <span>買取合計</span>
+          <span>買取合計({purchases.length}件)</span>
           <span>{formatYen(purchaseTotal)}</span>
         </div>
 
