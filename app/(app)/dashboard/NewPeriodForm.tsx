@@ -43,6 +43,26 @@ export function NewPeriodForm({ onCreated }: { onCreated?: () => void }) {
       return;
     }
 
+    const { data: overlapping, error: overlapError } = await supabase
+      .from("report_periods")
+      .select("id")
+      .eq("staff_id", user.id)
+      .eq("status", "draft")
+      .lte("period_start", periodEnd)
+      .gte("period_end", periodStart)
+      .limit(1);
+
+    if (overlapError) {
+      setLoading(false);
+      setError(overlapError.message);
+      return;
+    }
+    if (overlapping && overlapping.length > 0) {
+      setLoading(false);
+      setError("この日付範囲と重なる下書き期間が既にあります。新しく作らず、既存の期間をお使いください。");
+      return;
+    }
+
     const { data, error } = await supabase
       .from("report_periods")
       .insert({
