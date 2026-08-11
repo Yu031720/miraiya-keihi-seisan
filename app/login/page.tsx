@@ -60,7 +60,7 @@ export default function LoginPage() {
   return (
     <div className="flex flex-1 items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-8 shadow-sm">
-        <h1 className="text-xl font-bold text-blue-700">みらいや経費精算</h1>
+        <h1 className="text-xl font-bold text-blue-600">みらいや経費精算</h1>
         <p className="mt-1 text-sm text-zinc-500">
           {mode === "signin" ? "ログイン" : "新規アカウント登録"}
         </p>
@@ -106,7 +106,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="mt-2 rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 disabled:opacity-50"
           >
             {loading ? "処理中..." : mode === "signin" ? "ログイン" : "登録する"}
           </button>
@@ -119,7 +119,7 @@ export default function LoginPage() {
             setError(null);
             setInfo(null);
           }}
-          className="mt-4 w-full text-center text-sm text-zinc-500 hover:text-blue-700"
+          className="mt-4 w-full text-center text-sm text-zinc-500 hover:text-blue-600"
         >
           {mode === "signin" ? "アカウントを作成する" : "すでにアカウントをお持ちの方はこちら"}
         </button>
