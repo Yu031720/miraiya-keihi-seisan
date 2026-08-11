@@ -1,5 +1,3 @@
-import { createWorker } from "tesseract.js";
-
 export type ReceiptScanResult = {
   amount: number | null;
   description: string | null;
@@ -42,17 +40,23 @@ function guessDescription(text: string): string | null {
 }
 
 export async function scanReceipt(imageFile: File | Blob): Promise<ReceiptScanResult> {
-  const worker = await createWorker("jpn");
-  try {
-    const {
-      data: { text },
-    } = await worker.recognize(imageFile);
-    return {
-      amount: guessAmount(text),
-      description: guessDescription(text),
-      rawText: text,
-    };
-  } finally {
-    await worker.terminate();
+  const formData = new FormData();
+  formData.append("image", imageFile, "receipt.jpg");
+
+  const res = await fetch("/api/ocr-receipt", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error(`OCRに失敗しました (${res.status})`);
   }
+
+  const { text } = (await res.json()) as { text: string };
+
+  return {
+    amount: guessAmount(text),
+    description: guessDescription(text),
+    rawText: text,
+  };
 }
