@@ -21,9 +21,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b-2 border-blue-200 bg-white">
+      <header className="border-b-2 border-orange-200 bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <Link href="/dashboard" className="font-bold text-blue-600">
+          <Link href="/dashboard" className="font-bold text-orange-600">
             みらいや経費精算
           </Link>
           <div className="flex items-center gap-4">

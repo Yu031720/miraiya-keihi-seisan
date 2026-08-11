@@ -28,7 +28,7 @@ export default async function DashboardPage() {
             <Link
               key={p.id}
               href={`/periods/${p.id}`}
-              className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-4 py-3 hover:border-blue-300"
+              className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-4 py-3 hover:border-orange-300"
             >
               <span className="text-sm text-zinc-900">
                 {p.period_start} 〜 {p.period_end}

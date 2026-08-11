@@ -67,7 +67,7 @@ export function NewPeriodForm({ onCreated }: { onCreated?: () => void }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
+        className="rounded-md border border-orange-300 bg-white px-4 py-2 text-sm font-medium text-orange-600 hover:bg-orange-50"
       >
         + 新しい期間を作成
       </button>
@@ -116,7 +116,7 @@ export function NewPeriodForm({ onCreated }: { onCreated?: () => void }) {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 disabled:opacity-50"
+          className="rounded-md border border-orange-300 bg-white px-4 py-2 text-sm font-medium text-orange-600 hover:bg-orange-50 disabled:opacity-50"
         >
           {loading ? "作成中..." : "作成する"}
         </button>
