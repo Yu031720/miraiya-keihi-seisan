@@ -54,8 +54,29 @@ function isExcludedLine(line: string): boolean {
   return EXCLUDE_LINE_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
+// ラベルと金額だけの行(記号・数字・カンマ・円マークのみ)かどうか
+function isPureNumberLine(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.length > 0 && /^[¥￥\d,，\s]+$/.test(trimmed);
+}
+
+// OCRが「お預り計」「お釣り」等のラベルと金額を別々の行に分けて認識した場合、
+// ラベル行だけでなく直後の数字だけの行も一緒に除外する
+function filterExcludedLines(rawLines: string[]): string[] {
+  const excluded = new Array(rawLines.length).fill(false);
+  for (let i = 0; i < rawLines.length; i++) {
+    if (isExcludedLine(rawLines[i])) {
+      excluded[i] = true;
+      if (i + 1 < rawLines.length && isPureNumberLine(rawLines[i + 1])) {
+        excluded[i + 1] = true;
+      }
+    }
+  }
+  return rawLines.filter((_, i) => !excluded[i]);
+}
+
 function guessAmount(text: string): number | null {
-  const lines = text.split(/\r?\n/).filter((l) => !isExcludedLine(l));
+  const lines = filterExcludedLines(text.split(/\r?\n/));
 
   for (let i = 0; i < lines.length; i++) {
     const lower = lines[i].toLowerCase();
