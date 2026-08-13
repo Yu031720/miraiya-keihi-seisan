@@ -421,7 +421,7 @@ export function PeriodDetailClient({
                 <button
                   type="button"
                   onClick={() => receiptInputRef.current?.click()}
-                  className="rounded-md border border-orange-300 bg-white px-3 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-50"
+                  className="rounded-md border border-blue-300 bg-white px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50"
                 >
                   {receiptFile ? "写真を変更する" : "写真を撮る・選ぶ"}
                 </button>
