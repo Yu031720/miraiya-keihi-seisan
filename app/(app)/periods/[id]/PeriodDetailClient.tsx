@@ -190,14 +190,22 @@ export function PeriodDetailClient({
   }
 
   async function viewReceipt(path: string) {
+    // タップ操作と同期して先にタブを開いておかないと、モバイルブラウザに
+    // ポップアップとしてブロックされてしまうため、通信の完了を待たずに開く
+    const newTab = window.open("", "_blank");
     const { data, error } = await supabase.storage
       .from("receipts")
       .createSignedUrl(path, 60);
     if (error || !data) {
+      newTab?.close();
       setError("レシート画像を開けませんでした。");
       return;
     }
-    window.open(data.signedUrl, "_blank");
+    if (newTab) {
+      newTab.location.href = data.signedUrl;
+    } else {
+      window.open(data.signedUrl, "_blank");
+    }
   }
 
   async function deleteExpense(id: string) {
