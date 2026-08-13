@@ -379,9 +379,9 @@ export function PeriodDetailClient({
                   {exp.receipt_path && (
                     <button
                       onClick={() => viewReceipt(exp.receipt_path!)}
-                      className="ml-2 text-xs text-zinc-400 underline hover:text-zinc-700"
+                      className="ml-2 rounded border border-orange-300 bg-white px-2 py-0.5 text-xs font-medium text-orange-600 hover:bg-orange-50"
                     >
-                      レシート
+                      レシートを見る
                     </button>
                   )}
                 </td>
