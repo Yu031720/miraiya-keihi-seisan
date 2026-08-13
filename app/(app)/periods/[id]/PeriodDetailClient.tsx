@@ -414,7 +414,6 @@ export function PeriodDetailClient({
                   ref={receiptInputRef}
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   onChange={handleReceiptSelected}
                   className="hidden"
                 />
