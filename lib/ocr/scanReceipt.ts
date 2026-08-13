@@ -45,7 +45,11 @@ function extractNumbers(text: string): number[] {
     .filter((n) => Number.isFinite(n) && n >= 10 && n <= 10000000);
 }
 
+// 「048-990-5353」のようにラベルなしで書かれた電話番号を検出して除外する
+const PHONE_PATTERN = /\d{2,4}-\d{2,4}-\d{4}/;
+
 function isExcludedLine(line: string): boolean {
+  if (PHONE_PATTERN.test(line)) return true;
   const lower = line.toLowerCase();
   return EXCLUDE_LINE_KEYWORDS.some((kw) => lower.includes(kw));
 }
