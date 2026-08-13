@@ -416,8 +416,15 @@ export function PeriodDetailClient({
                   accept="image/*"
                   capture="environment"
                   onChange={handleReceiptSelected}
-                  className="text-sm"
+                  className="hidden"
                 />
+                <button
+                  type="button"
+                  onClick={() => receiptInputRef.current?.click()}
+                  className="rounded-md border border-orange-300 bg-white px-3 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-50"
+                >
+                  {receiptFile ? "写真を変更する" : "写真を撮る・選ぶ"}
+                </button>
                 {scanningReceipt && <span className="text-xs text-zinc-400">読み取り中...</span>}
               </div>
               {receiptPreviewUrl && (
