@@ -78,7 +78,9 @@ function filterExcludedLines(rawLines: string[]): string[] {
 function guessAmount(text: string): number | null {
   const lines = filterExcludedLines(text.split(/\r?\n/));
 
-  for (let i = 0; i < lines.length; i++) {
+  // 「税額合計」のような小計・内訳の“合計”より後に、本当の合計(総額)が
+  // 出てくることが多いため、下から探して最後に見つかった一致を採用する
+  for (let i = lines.length - 1; i >= 0; i--) {
     const lower = lines[i].toLowerCase();
     if (TOTAL_KEYWORDS.some((kw) => lower.includes(kw.toLowerCase()))) {
       const sameLineNums = extractNumbers(lines[i]);
