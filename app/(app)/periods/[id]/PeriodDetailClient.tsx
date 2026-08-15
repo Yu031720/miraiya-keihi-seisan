@@ -37,6 +37,8 @@ export function PeriodDetailClient({
   const [transferManualAddition, setTransferManualAddition] = useState(
     period.transfer_manual_addition
   );
+  // 振込金額の手動追加額を編集した分だけ、元手にも自動で反映するための基準値
+  const lastSavedTransferAdditionRef = useRef(period.transfer_manual_addition);
   const [purchases, setPurchases] = useState<Purchase[]>(initialPurchases);
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
 
@@ -74,6 +76,23 @@ export function PeriodDetailClient({
     const { error } = await supabase.from("report_periods").update(fields).eq("id", period.id);
     setSavingHeader(false);
     if (error) setError(error.message);
+  }
+
+  // 振込金額の手動追加額を増減させた分だけ、元手にも同額を自動で加算/減算する
+  // (会社からの追加入金を手動追加額に記録した際、その分を元手にも反映するため)
+  async function handleTransferAdditionBlur() {
+    const delta = transferManualAddition - lastSavedTransferAdditionRef.current;
+    lastSavedTransferAdditionRef.current = transferManualAddition;
+    if (delta === 0) {
+      await saveHeaderFields({ transfer_manual_addition: transferManualAddition });
+      return;
+    }
+    const newStartingFloat = startingFloat + delta;
+    setStartingFloat(newStartingFloat);
+    await saveHeaderFields({
+      transfer_manual_addition: transferManualAddition,
+      starting_float: newStartingFloat,
+    });
   }
 
   async function addPurchase(e: React.FormEvent) {
@@ -491,9 +510,10 @@ export function PeriodDetailClient({
               disabled={isFinalized}
               value={transferManualAddition}
               onChange={(e) => setTransferManualAddition(Number(e.target.value))}
-              onBlur={() => saveHeaderFields({ transfer_manual_addition: transferManualAddition })}
+              onBlur={handleTransferAdditionBlur}
               className="w-32 rounded-md border border-zinc-300 px-2 py-1.5 text-sm disabled:bg-zinc-100"
             />
+            <p className="mt-1 text-xs text-zinc-400">※この増減分は元手にも自動で反映されます</p>
           </div>
         </div>
       </section>
