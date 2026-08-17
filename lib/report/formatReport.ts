@@ -13,9 +13,8 @@ export function formatReport(params: {
   otherExpenseTotal: number;
   transferTotal: number;
 }): string {
-  const { displayName, periodStart, periodEnd, zangaku, otherExpenseTotal, transferTotal } = params;
+  const { periodStart, periodEnd, zangaku, otherExpenseTotal, transferTotal } = params;
   return [
-    `担当者名：${displayName}`,
     `期間：${formatDate(periodStart)}〜${formatDate(periodEnd)}`,
     `残金：${formatYen(zangaku)}`,
     `経費：${formatYen(otherExpenseTotal)}`,
