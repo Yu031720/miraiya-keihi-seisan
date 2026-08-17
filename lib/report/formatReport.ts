@@ -1,8 +1,8 @@
 import { formatYen } from "@/lib/report/formatCurrency";
 
 function formatDate(isoDate: string): string {
-  const [y, m, d] = isoDate.split("-");
-  return `${y}/${m}/${d}`;
+  const [, m, d] = isoDate.split("-");
+  return `${m}/${d}`;
 }
 
 export function formatReport(params: {
@@ -20,5 +20,7 @@ export function formatReport(params: {
     `残金：${formatYen(zangaku)}`,
     `その他の経費：${formatYen(otherExpenseTotal)}`,
     `振込金額：${formatYen(transferTotal)}`,
+    ``,
+    `ご確認よろしくお願い致します。`,
   ].join("\n");
 }
