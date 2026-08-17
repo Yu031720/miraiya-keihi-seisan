@@ -18,9 +18,9 @@ export function formatReport(params: {
     `担当者名：${displayName}`,
     `期間：${formatDate(periodStart)}〜${formatDate(periodEnd)}`,
     `残金：${formatYen(zangaku)}`,
-    `その他の経費：${formatYen(otherExpenseTotal)}`,
-    `振込金額：${formatYen(transferTotal)}`,
+    `経費：${formatYen(otherExpenseTotal)}`,
+    `振込：${formatYen(transferTotal)}`,
     ``,
-    `ご確認よろしくお願い致します。`,
+    `ご確認お願い致します！`,
   ].join("\n");
 }
